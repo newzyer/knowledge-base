@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: 'mariadb:10.11'
+    # image: 'mysql:latest'
+    ports:
+      - 3306:3306
+    # volumes:
+    #   - ./pkg/configs/sql:/docker-entrypoint-initdb.d
+    #   - $PWD/mysql:/var/lib/mysql
+    environment:
+      - MYSQL_DATABASE=$DB_NAME
+      - MYSQL_USER=$DB_USER
+      - MYSQL_PASSWORD=$DB_PASSWORD
+      - MYSQL_ROOT_PASSWORD=root
+      #- MYSQL_RANDOM_ROOT_PASSWORD="yes"
+  #redis:
+  #  image: 'redis:latest'
+  #  ports:
+  #    - 26379:6379
+
+

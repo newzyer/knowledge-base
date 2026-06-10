@@ -12,6 +12,7 @@
       <v-list-item
         prepend-icon="mdi-book-open-page-variant"
         :title="rail ? '' : '知识库'"
+        @click="rail = !rail"
         nav
         class="pa-3"
       >
@@ -19,7 +20,7 @@
           <v-btn
             variant="text"
             :icon="rail ? 'mdi-chevron-right' : 'mdi-chevron-left'"
-            @click="rail = !rail"
+            @click.stop="rail = !rail"
           />
         </template>
       </v-list-item>
@@ -94,30 +95,46 @@
           </v-btn>
         </template>
         <v-list density="compact" min-width="160">
-          <v-list-item prepend-icon="mdi-account-circle" title="个人中心" to="/profile" />
+          <v-list-item
+            prepend-icon="mdi-account-circle"
+            title="个人中心"
+            to="/profile"
+          />
           <v-divider />
-          <v-list-item prepend-icon="mdi-logout" title="退出登录" @click="handleLogout" />
+          <v-list-item
+            prepend-icon="mdi-logout"
+            title="退出登录"
+            @click="handleLogout"
+          />
         </v-list>
       </v-menu>
     </v-app-bar>
 
     <!-- 主内容 -->
     <v-main>
-      <v-container fluid class="pa-6" style="max-width: 1400px; margin: 0 auto; min-height: calc(100vh - 64px);">
+      <v-container
+        fluid
+        class="pa-6"
+        style="
+          max-width: 1400px;
+          margin: 0 auto;
+          min-height: calc(100vh - 64px);
+        "
+      >
         <router-view />
       </v-container>
     </v-main>
 
     <!-- 全局 Snackbar -->
     <v-snackbar
-      v-model="snackbar.show"
-      :color="snackbar.color"
+      v-model="snackbarStore.snackbar.show"
+      :color="snackbarStore.snackbar.color"
       :timeout="3000"
       location="top"
     >
-      {{ snackbar.text }}
+      {{ snackbarStore.snackbar.text }}
       <template v-slot:actions>
-        <v-btn variant="text" @click="snackbar.show = false">
+        <v-btn variant="text" @click="snackbarStore.snackbar.show = false">
           <v-icon>mdi-close</v-icon>
         </v-btn>
       </template>
@@ -126,66 +143,54 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { showSnackbar } from '@/api/request'
+import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useUserStore } from "@/stores/user";
+import { useSnackbarStore } from "@/stores/snackbar";
+import { showSnackbar } from "@/api/request";
 
-const route = useRoute()
-const router = useRouter()
-const userStore = useUserStore()
+const route = useRoute();
+const router = useRouter();
+const userStore = useUserStore();
+const snackbarStore = useSnackbarStore();
 
-const drawer = ref(true)
-const rail = ref(false)
+const drawer = ref(true);
+const rail = ref(false);
 
 const activeMenu = computed(() => {
-  const path = route.path
-  if (path.startsWith('/categories')) return 'categories'
-  if (path.startsWith('/chat')) return 'chat'
-  if (path.startsWith('/usage')) return 'usage'
-  if (path.startsWith('/profile')) return 'profile'
-  return 'documents'
-})
+  const path = route.path;
+  if (path.startsWith("/categories")) return "categories";
+  if (path.startsWith("/chat")) return "chat";
+  if (path.startsWith("/usage")) return "usage";
+  if (path.startsWith("/profile")) return "profile";
+  return "documents";
+});
 
 const displayName = computed(() => {
-  return userStore.userInfo?.nickname || userStore.userInfo?.username || '用户'
-})
+  return userStore.userInfo?.nickname || userStore.userInfo?.username || "用户";
+});
 
 const avatarLetter = computed(() => {
-  const name = displayName.value
-  return name ? name.charAt(0).toUpperCase() : 'U'
-})
+  const name = displayName.value;
+  return name ? name.charAt(0).toUpperCase() : "U";
+});
 
 const goToEdit = () => {
-  router.push('/document/edit')
-}
+  router.push("/document/edit");
+};
 
 const handleLogout = () => {
-  userStore.logout()
-  showSnackbar('已退出登录')
-  router.push('/login')
-}
-
-// 全局 Snackbar
-const snackbar = reactive({ show: false, text: '', color: 'success' })
-
-const onSnackbar = (e) => {
-  snackbar.text = e.detail.text
-  snackbar.color = e.detail.color || 'success'
-  snackbar.show = true
-}
+  userStore.logout();
+  showSnackbar("已退出登录");
+  router.push("/login");
+};
 
 onMounted(() => {
-  window.addEventListener('snackbar', onSnackbar)
   // 加载用户信息
   if (userStore.token && !userStore.userInfo) {
-    userStore.getProfileInfo().catch(() => {})
+    userStore.getProfileInfo().catch(() => {});
   }
-})
-
-onUnmounted(() => {
-  window.removeEventListener('snackbar', onSnackbar)
-})
+});
 </script>
 
 <style scoped>

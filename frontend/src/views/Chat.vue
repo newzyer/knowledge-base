@@ -36,7 +36,9 @@
               </template>
               <template v-slot:item="{ item, props }">
                 <v-list-item v-bind="props">
-                  <v-list-item-title class="text-capitalize">{{ item.value }}</v-list-item-title>
+                  <v-list-item-title class="text-capitalize">{{
+                    item.value
+                  }}</v-list-item-title>
                 </v-list-item>
               </template>
             </v-select>
@@ -91,12 +93,20 @@
       <v-col cols="12" md="9" class="chat-area-col">
         <v-card height="100%" flat class="rounded-0 d-flex flex-column">
           <!-- 消息列表 -->
-          <div class="message-list flex-grow-1 overflow-y-auto pa-4" ref="messageList">
-            <div v-if="messages.length === 0" class="d-flex flex-column align-center justify-center h-100">
-              <v-icon size="80" color="primary" class="mb-4">mdi-robot-happy</v-icon>
+          <div
+            class="message-list flex-grow-1 overflow-y-auto pa-4"
+            ref="messageList"
+          >
+            <div
+              v-if="messages.length === 0"
+              class="d-flex flex-column align-center justify-center h-100"
+            >
+              <v-icon size="80" color="primary" class="mb-4"
+                >mdi-robot-happy</v-icon
+              >
               <h2 class="text-h5 mb-2">AI 知识助手</h2>
               <p class="text-body-1 text-medium-emphasis text-center max-w-50">
-                基于您的知识库内容，智能回答问题。<br>
+                基于您的知识库内容，智能回答问题。<br />
                 开始对话前，请先为文档创建索引。
               </p>
             </div>
@@ -110,7 +120,9 @@
                 :color="msg.role === 'user' ? 'primary' : undefined"
                 :variant="msg.role === 'user' ? 'elevated' : 'outlined'"
                 max-width="80%"
-                :class="msg.role === 'user' ? 'ml-auto' : 'mr-auto assistant-card'"
+                :class="
+                  msg.role === 'user' ? 'ml-auto' : 'mr-auto assistant-card'
+                "
               >
                 <v-card-text class="message-content">
                   <div v-html="renderMarkdown(msg.content)"></div>
@@ -118,7 +130,12 @@
               </v-card>
               <!-- 引用来源（只显示在最后一条助手消息下方） -->
               <div
-                v-if="msg.role === 'assistant' && index === messages.length - 1 && currentReferences.length > 0 && !loading"
+                v-if="
+                  msg.role === 'assistant' &&
+                  index === messages.length - 1 &&
+                  currentReferences.length > 0 &&
+                  !loading
+                "
                 class="references-area mt-1"
               >
                 <div class="text-caption text-medium-emphasis mb-1">
@@ -133,7 +150,9 @@
                   class="mr-1 mb-1"
                 >
                   {{ ref.title }}
-                  <span class="text-medium-emphasis ml-1">{{ (ref.score * 100).toFixed(0) }}%</span>
+                  <span class="text-medium-emphasis ml-1"
+                    >{{ (ref.score * 100).toFixed(0) }}%</span
+                  >
                 </v-chip>
               </div>
             </div>
@@ -233,214 +252,231 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue'
-import { chatAPI, documentAPI } from '@/api/chat'
-import { marked } from 'marked'
+import { ref, onMounted, nextTick, computed } from "vue";
+import { chatAPI, documentAPI } from "@/api/chat";
+import { marked } from "marked";
 
-const sessions = ref([])
-const currentSessionID = ref('')
-const messages = ref([])
-const inputMessage = ref('')
-const loading = ref(false)
-const messageList = ref(null)
-const showDocSelect = ref(false)
-const allDocuments = ref([])
-const selectedDocuments = ref([])
-const currentReferences = ref([])
+const sessions = ref([]);
+const currentSessionID = ref("");
+const messages = ref([]);
+const inputMessage = ref("");
+const loading = ref(false);
+const messageList = ref(null);
+const showDocSelect = ref(false);
+const allDocuments = ref([]);
+const selectedDocuments = ref([]);
+const currentReferences = ref([]);
 
 // 模型选择
-const modelProviders = ref([])
-const modelList = ref({})
-const selectedProvider = ref('tongyi')
-const selectedModel = ref('qwen-turbo')
+const modelProviders = ref([]);
+const modelList = ref({});
+const selectedProvider = ref("");
+const selectedModel = ref("");
 
 // 加载可用模型
 const loadModels = async () => {
   try {
-    const res = await chatAPI.getModels()
-    modelProviders.value = res.providers || []
-    modelList.value = res.models || {}
+    const res = await chatAPI.getModels();
+    // 转换 providers 字符串数组为 v-select 需要的格式
+    modelProviders.value = (res.providers || []).map((p) => ({
+      title: p,
+      value: p,
+    }));
+    // 转换 models 中的字符串数组为对象数组
+    const modelsObj = {};
+    for (const [provider, modelArray] of Object.entries(res.models || {})) {
+      modelsObj[provider] = (modelArray || []).map((m) => ({
+        title: m,
+        value: m,
+      }));
+    }
+    modelList.value = modelsObj;
+    selectedProvider.value = res.currentProvider || "";
+    selectedModel.value = res.currentModel || "";
   } catch (err) {
-    console.error('加载模型列表失败:', err)
+    console.error("加载模型列表失败:", err);
   }
-}
+};
 
 // 切换模型
 const changeModel = async () => {
   try {
     await chatAPI.selectModel({
       provider: selectedProvider.value,
-      model: selectedModel.value
-    })
+      model: selectedModel.value,
+    });
   } catch (err) {
-    console.error('切换模型失败:', err)
+    console.error("切换模型失败:", err);
   }
-}
+};
 
 // 当前提供商的模型列表
 const currentModels = computed(() => {
-  return modelList.value[selectedProvider.value] || []
-})
+  return modelList.value[selectedProvider.value] || [];
+});
 
 // 加载会话列表
 const loadSessions = async () => {
   try {
-    const res = await chatAPI.getSessions()
-    sessions.value = res.sessions || []
+    const res = await chatAPI.getSessions();
+    sessions.value = res.sessions || [];
   } catch (err) {
-    console.error('加载会话失败:', err)
+    console.error("加载会话失败:", err);
   }
-}
+};
 
 // 加载文档列表
 const loadDocuments = async () => {
   try {
-    const res = await documentAPI.getList()
-    allDocuments.value = res.documents || []
+    const res = await documentAPI.getList();
+    allDocuments.value = res.documents || [];
   } catch (err) {
-    console.error('加载文档失败:', err)
+    console.error("加载文档失败:", err);
   }
-}
+};
 
 // 选择会话
 const selectSession = async (sessionID) => {
-  currentSessionID.value = sessionID
+  currentSessionID.value = sessionID;
   try {
-    const res = await chatAPI.getSession(sessionID)
-    messages.value = res.messages || []
-    scrollToBottom()
+    const res = await chatAPI.getSession(sessionID);
+    messages.value = res.messages || [];
+    scrollToBottom();
   } catch (err) {
-    console.error('加载会话消息失败:', err)
+    console.error("加载会话消息失败:", err);
   }
-}
+};
 
 // 新建会话
 const newSession = () => {
-  currentSessionID.value = ''
-  messages.value = []
-}
+  currentSessionID.value = "";
+  messages.value = [];
+};
 
 // 发送消息（流式输出）
 const sendMessage = async () => {
-  if (!inputMessage.value.trim() || loading.value) return
+  if (!inputMessage.value.trim() || loading.value) return;
 
-  const question = inputMessage.value.trim()
-  inputMessage.value = ''
+  const question = inputMessage.value.trim();
+  inputMessage.value = "";
 
   // 添加用户消息
   messages.value.push({
-    role: 'user',
-    content: question
-  })
+    role: "user",
+    content: question,
+  });
 
   // 添加空的助手消息（用于流式填充）
-  const assistantMsgIndex = messages.value.length
+  const assistantMsgIndex = messages.value.length;
   messages.value.push({
-    role: 'assistant',
-    content: ''
-  })
-  scrollToBottom()
+    role: "assistant",
+    content: "",
+  });
+  scrollToBottom();
 
-  loading.value = true
-  let fullAnswer = ''
-  currentReferences.value = [] // 清空上次引用
+  loading.value = true;
+  let fullAnswer = "";
+  currentReferences.value = []; // 清空上次引用
 
   try {
     await chatAPI.askStream(
       {
         question,
         sessionID: currentSessionID.value,
-        documentIDs: selectedDocuments.value.length > 0 ? selectedDocuments.value : null
+        documentIDs:
+          selectedDocuments.value.length > 0 ? selectedDocuments.value : null,
       },
       // onMessage: 接收到流式内容
       (chunk) => {
-        fullAnswer += chunk
-        messages.value[assistantMsgIndex].content = fullAnswer
-        scrollToBottom()
+        fullAnswer += chunk;
+        messages.value[assistantMsgIndex].content = fullAnswer;
+        scrollToBottom();
       },
       // onDone: 流式结束
       (sessionID) => {
-        loading.value = false
+        loading.value = false;
         if (!currentSessionID.value && sessionID) {
-          currentSessionID.value = sessionID
-          loadSessions()
+          currentSessionID.value = sessionID;
+          loadSessions();
         }
       },
       // onError: 错误处理
       (err) => {
-        loading.value = false
-        messages.value[assistantMsgIndex].content = '抱歉，回答生成失败：' + (err.message || '网络错误')
+        loading.value = false;
+        messages.value[assistantMsgIndex].content =
+          "抱歉，回答生成失败：" + (err.message || "网络错误");
       },
       // onReferences: 接收引用来源
       (refs) => {
-        currentReferences.value = refs
-      }
-    )
+        currentReferences.value = refs;
+      },
+    );
   } catch (err) {
-    loading.value = false
-    messages.value[assistantMsgIndex].content = '抱歉，回答生成失败：' + (err.message || '未知错误')
+    loading.value = false;
+    messages.value[assistantMsgIndex].content =
+      "抱歉，回答生成失败：" + (err.message || "未知错误");
   }
-}
+};
 
 // 删除会话
 const deleteSession = async (sessionID) => {
   try {
-    await chatAPI.deleteSession(sessionID)
-    sessions.value = sessions.value.filter(s => s.sessionID !== sessionID)
+    await chatAPI.deleteSession(sessionID);
+    sessions.value = sessions.value.filter((s) => s.sessionID !== sessionID);
     if (currentSessionID.value === sessionID) {
-      newSession()
+      newSession();
     }
   } catch (err) {
-    console.error('删除会话失败:', err)
+    console.error("删除会话失败:", err);
   }
-}
+};
 
 // 文档选择
 const toggleDocument = (docID) => {
-  const idx = selectedDocuments.value.indexOf(docID)
+  const idx = selectedDocuments.value.indexOf(docID);
   if (idx >= 0) {
-    selectedDocuments.value.splice(idx, 1)
+    selectedDocuments.value.splice(idx, 1);
   } else {
-    selectedDocuments.value.push(docID)
+    selectedDocuments.value.push(docID);
   }
-}
+};
 
 const clearDocuments = () => {
-  selectedDocuments.value = []
-}
+  selectedDocuments.value = [];
+};
 
 // 渲染 Markdown
 const renderMarkdown = (text) => {
-  return marked.parse(text || '')
-}
+  return marked.parse(text || "");
+};
 
 // 格式化日期
 const formatDate = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = now - date
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diff = now - date;
 
-  if (diff < 60000) return '刚刚'
-  if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前'
-  if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前'
-  return date.toLocaleDateString()
-}
+  if (diff < 60000) return "刚刚";
+  if (diff < 3600000) return Math.floor(diff / 60000) + " 分钟前";
+  if (diff < 86400000) return Math.floor(diff / 3600000) + " 小时前";
+  return date.toLocaleDateString();
+};
 
 // 滚动到底部
 const scrollToBottom = () => {
   nextTick(() => {
     if (messageList.value) {
-      messageList.value.scrollTop = messageList.value.scrollHeight
+      messageList.value.scrollTop = messageList.value.scrollHeight;
     }
-  })
-}
+  });
+};
 
 onMounted(() => {
-  loadSessions()
-  loadDocuments()
-  loadModels()
-})
+  loadSessions();
+  loadDocuments();
+  loadModels();
+});
 </script>
 
 <style scoped>
