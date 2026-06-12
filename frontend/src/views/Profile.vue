@@ -36,12 +36,18 @@
                 label="邮箱"
                 prepend-inner-icon="mdi-email"
                 variant="outlined"
-                :rules="[v => !v || /.+@.+\..+/.test(v) || '邮箱格式不正确']"
+                :rules="[(v) => !v || /.+@.+\..+/.test(v) || '邮箱格式不正确']"
                 density="comfortable"
                 class="mb-4"
               />
               <div class="d-flex justify-end">
-                <v-btn color="primary" variant="elevated" :loading="loading" type="submit" rounded="lg">
+                <v-btn
+                  color="primary"
+                  variant="elevated"
+                  :loading="loading"
+                  type="submit"
+                  rounded="lg"
+                >
                   保存修改
                 </v-btn>
               </div>
@@ -59,7 +65,10 @@
           <v-divider class="my-2" />
 
           <v-card-text class="pa-6">
-            <v-form ref="passwordFormRef" @submit.prevent="handleChangePassword">
+            <v-form
+              ref="passwordFormRef"
+              @submit.prevent="handleChangePassword"
+            >
               <v-text-field
                 v-model="passwordForm.oldPassword"
                 label="原密码"
@@ -68,7 +77,7 @@
                 :append-inner-icon="showOld ? 'mdi-eye' : 'mdi-eye-off'"
                 :type="showOld ? 'text' : 'password'"
                 @click:append-inner="showOld = !showOld"
-                :rules="[v => !!v || '请输入原密码']"
+                :rules="[(v) => !!v || '请输入原密码']"
                 density="comfortable"
                 class="mb-3"
               />
@@ -81,8 +90,8 @@
                 :type="showNew ? 'text' : 'password'"
                 @click:append-inner="showNew = !showNew"
                 :rules="[
-                  v => !!v || '请输入新密码',
-                  v => (v && v.length >= 6) || '密码至少 6 个字符'
+                  (v) => !!v || '请输入新密码',
+                  (v) => (v && v.length >= 6) || '密码至少 6 个字符',
                 ]"
                 density="comfortable"
                 class="mb-3"
@@ -96,14 +105,20 @@
                 :type="showConfirm ? 'text' : 'password'"
                 @click:append-inner="showConfirm = !showConfirm"
                 :rules="[
-                  v => !!v || '请确认新密码',
-                  v => v === passwordForm.newPassword || '两次密码不一致'
+                  (v) => !!v || '请确认新密码',
+                  (v) => v === passwordForm.newPassword || '两次密码不一致',
                 ]"
                 density="comfortable"
                 class="mb-4"
               />
               <div class="d-flex justify-end">
-                <v-btn color="warning" variant="elevated" :loading="passwordLoading" type="submit" rounded="lg">
+                <v-btn
+                  color="warning"
+                  variant="elevated"
+                  :loading="passwordLoading"
+                  type="submit"
+                  rounded="lg"
+                >
                   修改密码
                 </v-btn>
               </div>
@@ -115,88 +130,91 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { useUserStore } from '@/stores/user'
-import { updateProfile, changePassword } from '@/api'
-import { showSnackbar } from '@/api/request'
+<script setup lang="ts">
+import { ref, reactive, onMounted } from "vue";
+import { useUserStore } from "@/stores/user";
+import { updateProfile, changePassword } from "@/api";
+import { showSnackbar } from "@/api/request";
 
-const userStore = useUserStore()
-const formRef = ref(null)
-const passwordFormRef = ref(null)
-const loading = ref(false)
-const passwordLoading = ref(false)
+const userStore = useUserStore();
+const formRef = ref(null);
+const passwordFormRef = ref(null);
+const loading = ref(false);
+const passwordLoading = ref(false);
 
-const showOld = ref(false)
-const showNew = ref(false)
-const showConfirm = ref(false)
+const showOld = ref(false);
+const showNew = ref(false);
+const showConfirm = ref(false);
 
 const form = reactive({
-  username: '',
-  nickname: '',
-  email: ''
-})
+  username: "",
+  nickname: "",
+  email: "",
+});
 
 const passwordForm = reactive({
-  oldPassword: '',
-  newPassword: '',
-  confirmPassword: ''
-})
+  oldPassword: "",
+  newPassword: "",
+  confirmPassword: "",
+});
 
 const loadProfile = () => {
-  const user = userStore.userInfo
+  const user = userStore.userInfo;
   if (user) {
-    form.username = user.username
-    form.nickname = user.nickname || ''
-    form.email = user.email || ''
+    form.username = user.username;
+    form.nickname = user.nickname || "";
+    form.email = user.email || "";
   }
-}
+};
 
 const handleUpdate = async () => {
-  const { valid } = await formRef.value.validate()
-  if (!valid) return
+  const { valid } = await formRef.value.validate();
+  if (!valid) return;
 
-  loading.value = true
+  loading.value = true;
   try {
     await updateProfile({
       nickname: form.nickname,
-      email: form.email
-    })
-    showSnackbar('更新成功')
-    await userStore.getProfileInfo()
+      email: form.email,
+    });
+    showSnackbar("更新成功");
+    await userStore.getProfileInfo();
   } catch (error) {
     // handled
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handleChangePassword = async () => {
-  const { valid } = await passwordFormRef.value.validate()
-  if (!valid) return
+  const { valid } = await passwordFormRef.value.validate();
+  if (!valid) return;
 
-  passwordLoading.value = true
+  passwordLoading.value = true;
   try {
     await changePassword({
       oldPassword: passwordForm.oldPassword,
-      newPassword: passwordForm.newPassword
-    })
-    showSnackbar('密码修改成功')
-    passwordForm.oldPassword = ''
-    passwordForm.newPassword = ''
-    passwordForm.confirmPassword = ''
+      newPassword: passwordForm.newPassword,
+    });
+    showSnackbar("密码修改成功");
+    passwordForm.oldPassword = "";
+    passwordForm.newPassword = "";
+    passwordForm.confirmPassword = "";
   } catch (error) {
     // handled
   } finally {
-    passwordLoading.value = false
+    passwordLoading.value = false;
   }
-}
+};
 
 onMounted(() => {
-  loadProfile()
+  loadProfile();
   // 如果没有用户信息，尝试加载
   if (!userStore.userInfo && userStore.token) {
-    userStore.getProfileInfo().then(loadProfile).catch(() => {})
+    userStore
+      .getProfileInfo()
+      .then(loadProfile)
+      .catch(() => {});
   }
-})
+});
 </script>

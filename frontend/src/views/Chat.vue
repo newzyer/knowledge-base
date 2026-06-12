@@ -149,7 +149,7 @@
                   color="primary"
                   class="mr-1 mb-1"
                 >
-                  {{ ref.title }}
+                  {{ ref.documentName }}
                   <span class="text-medium-emphasis ml-1"
                     >{{ (ref.score * 100).toFixed(0) }}%</span
                   >
@@ -251,27 +251,49 @@
   </v-container>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from "vue";
 import { chatAPI, documentAPI } from "@/api/chat";
+import type { StreamReference } from "@/api/chat";
+import type { ChatMessage, ChatSession, Document } from "@/api/types";
 import { marked } from "marked";
 
-const sessions = ref([]);
+type MessageRole = "user" | "assistant";
+
+interface MessageItem {
+  id?: number;
+  sessionID?: string;
+  role: MessageRole;
+  content: string;
+  createdAt?: string;
+}
+
+interface SelectOption {
+  title: string;
+  value: string;
+}
+
+const sessions = ref<ChatSession[]>([]);
 const currentSessionID = ref("");
-const messages = ref([]);
+const messages = ref<MessageItem[]>([]);
 const inputMessage = ref("");
 const loading = ref(false);
-const messageList = ref(null);
+const messageList = ref<HTMLElement | null>(null);
 const showDocSelect = ref(false);
-const allDocuments = ref([]);
-const selectedDocuments = ref([]);
-const currentReferences = ref([]);
+const allDocuments = ref<Document[]>([]);
+const selectedDocuments = ref<number[]>([]);
+const currentReferences = ref<StreamReference[]>([]);
 
 // 模型选择
-const modelProviders = ref([]);
-const modelList = ref({});
+const modelProviders = ref<SelectOption[]>([]);
+const modelList = ref<Record<string, SelectOption[]>>({});
 const selectedProvider = ref("");
 const selectedModel = ref("");
+
+const getErrorMessage = (err: unknown, fallback: string): string => {
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+};
 
 // 加载可用模型
 const loadModels = async () => {
@@ -283,7 +305,7 @@ const loadModels = async () => {
       value: p,
     }));
     // 转换 models 中的字符串数组为对象数组
-    const modelsObj = {};
+    const modelsObj: Record<string, SelectOption[]> = {};
     for (const [provider, modelArray] of Object.entries(res.models || {})) {
       modelsObj[provider] = (modelArray || []).map((m) => ({
         title: m,
@@ -336,11 +358,17 @@ const loadDocuments = async () => {
 };
 
 // 选择会话
-const selectSession = async (sessionID) => {
+const selectSession = async (sessionID: string) => {
   currentSessionID.value = sessionID;
   try {
     const res = await chatAPI.getSession(sessionID);
-    messages.value = res.messages || [];
+    messages.value = (res.messages || []).map((msg: ChatMessage) => ({
+      id: msg.id,
+      sessionID: msg.sessionID,
+      role: (msg.role || "assistant") as MessageRole,
+      content: msg.content || "",
+      createdAt: msg.createdAt,
+    }));
     scrollToBottom();
   } catch (err) {
     console.error("加载会话消息失败:", err);
@@ -386,40 +414,51 @@ const sendMessage = async () => {
         documentIDs:
           selectedDocuments.value.length > 0 ? selectedDocuments.value : null,
       },
-      // onMessage: 接收到流式内容
-      (chunk) => {
-        fullAnswer += chunk;
-        messages.value[assistantMsgIndex].content = fullAnswer;
-        scrollToBottom();
-      },
-      // onDone: 流式结束
-      (sessionID) => {
-        loading.value = false;
-        if (!currentSessionID.value && sessionID) {
-          currentSessionID.value = sessionID;
-          loadSessions();
-        }
-      },
-      // onError: 错误处理
-      (err) => {
-        loading.value = false;
-        messages.value[assistantMsgIndex].content =
-          "抱歉，回答生成失败：" + (err.message || "网络错误");
-      },
-      // onReferences: 接收引用来源
-      (refs) => {
-        currentReferences.value = refs;
+      {
+        // onMessage: 接收到流式内容
+        onMessage: (chunk: string) => {
+          fullAnswer += chunk;
+          const assistantMsg = messages.value[assistantMsgIndex];
+          if (assistantMsg) {
+            assistantMsg.content = fullAnswer;
+          }
+          scrollToBottom();
+        },
+        // onDone: 流式结束
+        onDone: (sessionID: string) => {
+          loading.value = false;
+          if (!currentSessionID.value && sessionID) {
+            currentSessionID.value = sessionID;
+            loadSessions();
+          }
+        },
+        // onError: 错误处理
+        onError: (err: Error) => {
+          loading.value = false;
+          const assistantMsg = messages.value[assistantMsgIndex];
+          if (assistantMsg) {
+            assistantMsg.content =
+              "抱歉，回答生成失败：" + (err.message || "网络错误");
+          }
+        },
+        // onReferences: 接收引用来源
+        onReferences: (refs: StreamReference[]) => {
+          currentReferences.value = refs;
+        },
       },
     );
   } catch (err) {
     loading.value = false;
-    messages.value[assistantMsgIndex].content =
-      "抱歉，回答生成失败：" + (err.message || "未知错误");
+    const assistantMsg = messages.value[assistantMsgIndex];
+    if (assistantMsg) {
+      assistantMsg.content =
+        "抱歉，回答生成失败：" + getErrorMessage(err, "未知错误");
+    }
   }
 };
 
 // 删除会话
-const deleteSession = async (sessionID) => {
+const deleteSession = async (sessionID: string) => {
   try {
     await chatAPI.deleteSession(sessionID);
     sessions.value = sessions.value.filter((s) => s.sessionID !== sessionID);
@@ -432,7 +471,7 @@ const deleteSession = async (sessionID) => {
 };
 
 // 文档选择
-const toggleDocument = (docID) => {
+const toggleDocument = (docID: number) => {
   const idx = selectedDocuments.value.indexOf(docID);
   if (idx >= 0) {
     selectedDocuments.value.splice(idx, 1);
@@ -446,16 +485,16 @@ const clearDocuments = () => {
 };
 
 // 渲染 Markdown
-const renderMarkdown = (text) => {
-  return marked.parse(text || "");
+const renderMarkdown = (text: string): string => {
+  return marked.parse(text || "") as string;
 };
 
 // 格式化日期
-const formatDate = (dateStr) => {
+const formatDate = (dateStr?: string): string => {
   if (!dateStr) return "";
   const date = new Date(dateStr);
   const now = new Date();
-  const diff = now - date;
+  const diff = now.getTime() - date.getTime();
 
   if (diff < 60000) return "刚刚";
   if (diff < 3600000) return Math.floor(diff / 60000) + " 分钟前";

@@ -2,12 +2,12 @@
   <router-view />
 </template>
 
-<script setup>
-</script>
+<script setup lang="ts"></script>
 
 <style>
 /* 全局重置 & 基础样式 */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;

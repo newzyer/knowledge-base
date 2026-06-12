@@ -6,8 +6,16 @@
         <v-btn icon variant="text" @click="$router.back()" class="mr-2">
           <v-icon>mdi-arrow-left</v-icon>
         </v-btn>
-        <h2 class="text-h6 font-weight-bold flex-grow-1">{{ currentDoc.title }}</h2>
-        <v-btn color="primary" prepend-icon="mdi-pencil" :to="`/document/edit/${route.params.id}`" rounded="lg" class="mr-2">
+        <h2 class="text-h6 font-weight-bold flex-grow-1">
+          {{ currentDoc.title }}
+        </h2>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-pencil"
+          :to="`/document/edit/${route.params.id}`"
+          rounded="lg"
+          class="mr-2"
+        >
           编辑
         </v-btn>
         <v-btn
@@ -22,7 +30,12 @@
         </v-btn>
         <v-menu>
           <template v-slot:activator="{ props }">
-            <v-btn variant="outlined" prepend-icon="mdi-download" v-bind="props" rounded="lg">
+            <v-btn
+              variant="outlined"
+              prepend-icon="mdi-download"
+              v-bind="props"
+              rounded="lg"
+            >
               导出
             </v-btn>
           </template>
@@ -42,7 +55,13 @@
       <v-card-text class="pa-6">
         <!-- 元信息 -->
         <div class="d-flex align-center mb-6">
-          <v-chip v-if="currentDoc.category" size="small" color="primary" variant="tonal" prepend-icon="mdi-folder">
+          <v-chip
+            v-if="currentDoc.category"
+            size="small"
+            color="primary"
+            variant="tonal"
+            prepend-icon="mdi-folder"
+          >
             {{ currentDoc.category.name }}
           </v-chip>
           <span v-else class="text-grey text-body-2 mr-3">未分类</span>
@@ -72,99 +91,105 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { getDocument, exportMarkdown } from '@/api'
-import { showSnackbar } from '@/api/request'
-import { documentAPI } from '@/api/chat'
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { getDocument, exportMarkdown } from "@/api";
+import { showSnackbar } from "@/api/request";
+import { documentAPI } from "@/api/chat";
 
-const route = useRoute()
-const loading = ref(false)
-const indexing = ref(false)
-const currentDoc = ref({})
+const route = useRoute();
+const loading = ref(false);
+const indexing = ref(false);
+const currentDoc = ref({});
 
 const renderedContent = computed(() => {
-  const content = currentDoc.value.content || ''
+  const content = currentDoc.value.content || "";
   return content
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/^\- (.+)$/gm, '<li>$1</li>')
-    .replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>')
-    .replace(/\n/g, '<br>')
-})
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/^### (.+)$/gm, "<h3>$1</h3>")
+    .replace(/^## (.+)$/gm, "<h2>$1</h2>")
+    .replace(/^# (.+)$/gm, "<h1>$1</h1>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>")
+    .replace(/`(.+?)`/g, "<code>$1</code>")
+    .replace(/^\- (.+)$/gm, "<li>$1</li>")
+    .replace(/^> (.+)$/gm, "<blockquote>$1</blockquote>")
+    .replace(/\n/g, "<br>");
+});
 
 const formatDate = (dateStr) => {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleString('zh-CN')
-}
+  if (!dateStr) return "-";
+  return new Date(dateStr).toLocaleString("zh-CN");
+};
 
 const loadDocument = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await getDocument(route.params.id)
-    currentDoc.value = res.data
+    const res = await getDocument(route.params.id);
+    currentDoc.value = res.data;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const handleExportMarkdown = async () => {
   try {
-    const res = await exportMarkdown(route.params.id)
-    const blob = new Blob([res], { type: 'text/markdown;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${currentDoc.value.title || 'document'}.md`
-    a.click()
-    URL.revokeObjectURL(url)
-    showSnackbar('导出成功')
+    const res = await exportMarkdown(route.params.id);
+    const blob = new Blob([res], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${currentDoc.value.title || "document"}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showSnackbar("导出成功");
   } catch (error) {
-    showSnackbar('导出失败', 'error')
+    showSnackbar("导出失败", "error");
   }
-}
+};
 
 const handleExportPDF = async () => {
   try {
-    const html2pdf = (await import('html2pdf.js')).default
-    const content = document.querySelector('.doc-content')
-    if (!content) return
+    const html2pdf = (await import("html2pdf.js")).default;
+    const content = document.querySelector(".doc-content");
+    if (!content) return;
 
-    html2pdf().set({
-      margin: [15, 15, 15, 15],
-      filename: `${currentDoc.value.title || 'document'}.pdf`,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(content).save()
-    showSnackbar('导出成功')
+    html2pdf()
+      .set({
+        margin: [15, 15, 15, 15],
+        filename: `${currentDoc.value.title || "document"}.pdf`,
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      })
+      .from(content)
+      .save();
+    showSnackbar("导出成功");
   } catch (error) {
-    showSnackbar('导出失败，请重试', 'error')
+    showSnackbar("导出失败，请重试", "error");
   }
-}
+};
 
 // 创建文档索引
 const handleCreateIndex = async () => {
-  indexing.value = true
+  indexing.value = true;
   try {
-    await documentAPI.createIndex(route.params.id)
-    showSnackbar('索引创建成功，现在可以在 AI 对话中使用此文档')
+    await documentAPI.createIndex(route.params.id);
+    showSnackbar("索引创建成功，现在可以在 AI 对话中使用此文档");
   } catch (error) {
-    showSnackbar('索引创建失败：' + (error.response?.data?.error || '未知错误'), 'error')
+    showSnackbar(
+      "索引创建失败：" + (error.response?.data?.error || "未知错误"),
+      "error",
+    );
   } finally {
-    indexing.value = false
+    indexing.value = false;
   }
-}
+};
 
-onMounted(() => loadDocument())
+onMounted(() => loadDocument());
 </script>
 
 <style scoped>
@@ -172,17 +197,29 @@ onMounted(() => loadDocument())
   line-height: 1.8;
   font-size: 16px;
 }
-.doc-content :deep(h1) { margin-top: 24px; margin-bottom: 16px; font-size: 1.8em; }
-.doc-content :deep(h2) { margin-top: 20px; margin-bottom: 12px; font-size: 1.4em; }
-.doc-content :deep(h3) { margin-top: 16px; margin-bottom: 8px; font-size: 1.2em; }
+.doc-content :deep(h1) {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-size: 1.8em;
+}
+.doc-content :deep(h2) {
+  margin-top: 20px;
+  margin-bottom: 12px;
+  font-size: 1.4em;
+}
+.doc-content :deep(h3) {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-size: 1.2em;
+}
 .doc-content :deep(code) {
-  background-color: #E8EAF6;
+  background-color: #e8eaf6;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.9em;
 }
 .doc-content :deep(blockquote) {
-  border-left: 4px solid #1976D2;
+  border-left: 4px solid #1976d2;
   padding-left: 16px;
   color: #666;
   margin: 16px 0;

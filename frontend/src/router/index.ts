@@ -1,6 +1,10 @@
-import { createRouter, createWebHashHistory } from "vue-router";
+import {
+  createRouter,
+  createWebHashHistory,
+  type RouteRecordRaw,
+} from "vue-router";
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: "/login",
     name: "Login",
@@ -61,18 +65,16 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from) => {
+router.beforeEach((to) => {
   const token = localStorage.getItem("token");
   const isAuthPage = to.name === "Login" || to.name === "Register";
 
-  if (!isAuthPage) {
-    if (!token) {
-      return { name: "Login" };
-    }
-  } else {
-    if (token) {
-      return { name: "Documents" };
-    }
+  if (!isAuthPage && !token) {
+    return { name: "Login" };
+  }
+
+  if (isAuthPage && token) {
+    return { name: "Documents" };
   }
 });
 

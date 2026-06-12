@@ -36,7 +36,9 @@
         <v-card>
           <v-card-text class="text-center">
             <div class="text-caption text-grey">总费用（$）</div>
-            <div class="text-h4">{{ stats.totalCost?.toFixed(4) || '0.0000' }}</div>
+            <div class="text-h4">
+              {{ stats.totalCost?.toFixed(4) || "0.0000" }}
+            </div>
           </v-card-text>
         </v-card>
       </v-col>
@@ -49,7 +51,10 @@
           <v-card-title>按提供商统计</v-card-title>
           <v-card-text>
             <v-list v-if="stats.byProvider && stats.byProvider.length > 0">
-              <v-list-item v-for="item in stats.byProvider" :key="item.provider">
+              <v-list-item
+                v-for="item in stats.byProvider"
+                :key="item.provider"
+              >
                 <template v-slot:prepend>
                   <v-avatar size="32" color="primary">
                     {{ item.provider.charAt(0).toUpperCase() }}
@@ -57,10 +62,16 @@
                 </template>
                 <v-list-item-title>{{ item.provider }}</v-list-item-title>
                 <v-list-item-subtitle>
-                  {{ item.requests }} 次 · {{ formatNumber(item.inputTokens + item.outputTokens) }} tokens
+                  {{ item.requests }} 次 ·
+                  {{
+                    formatNumber(item.inputTokens + item.outputTokens)
+                  }}
+                  tokens
                 </v-list-item-subtitle>
                 <template v-slot:append>
-                  <span class="text-body-2">${{ item.cost?.toFixed(4) || '0.0000' }}</span>
+                  <span class="text-body-2"
+                    >${{ item.cost?.toFixed(4) || "0.0000" }}</span
+                  >
                 </template>
               </v-list-item>
             </v-list>
@@ -78,10 +89,16 @@
               <v-list-item v-for="item in stats.byModel" :key="item.model">
                 <v-list-item-title>{{ item.model }}</v-list-item-title>
                 <v-list-item-subtitle>
-                  {{ item.requests }} 次 · {{ formatNumber(item.inputTokens + item.outputTokens) }} tokens
+                  {{ item.requests }} 次 ·
+                  {{
+                    formatNumber(item.inputTokens + item.outputTokens)
+                  }}
+                  tokens
                 </v-list-item-subtitle>
                 <template v-slot:append>
-                  <span class="text-body-2">${{ item.cost?.toFixed(4) || '0.0000' }}</span>
+                  <span class="text-body-2"
+                    >${{ item.cost?.toFixed(4) || "0.0000" }}</span
+                  >
                 </template>
               </v-list-item>
             </v-list>
@@ -113,7 +130,7 @@
                   <td>{{ item.requests }}</td>
                   <td>{{ formatNumber(item.inputTokens) }}</td>
                   <td>{{ formatNumber(item.outputTokens) }}</td>
-                  <td>${{ item.cost?.toFixed(4) || '0.0000' }}</td>
+                  <td>${{ item.cost?.toFixed(4) || "0.0000" }}</td>
                 </tr>
               </tbody>
             </v-simple-table>
@@ -139,7 +156,7 @@
                 {{ formatDateTime(item.createdAt) }}
               </template>
               <template v-slot:item.cost="{ item }">
-                ${{ item.cost?.toFixed(6) || '0.000000' }}
+                ${{ item.cost?.toFixed(6) || "0.000000" }}
               </template>
             </v-data-table>
           </v-card-text>
@@ -149,11 +166,11 @@
   </v-container>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import { chatAPI } from '@/api/chat'
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { chatAPI } from "@/api/chat";
 
-const loading = ref(false)
+const loading = ref(false);
 const stats = ref({
   totalRequests: 0,
   totalInput: 0,
@@ -161,55 +178,55 @@ const stats = ref({
   totalCost: 0,
   byProvider: [],
   byModel: [],
-  byDate: []
-})
-const logs = ref([])
+  byDate: [],
+});
+const logs = ref([]);
 
 const logHeaders = [
-  { title: 'ID', key: 'id', width: 80 },
-  { title: '提供商', key: 'provider' },
-  { title: '模型', key: 'model' },
-  { title: '类型', key: 'requestType' },
-  { title: '输入 Tokens', key: 'inputTokens' },
-  { title: '输出 Tokens', key: 'outputTokens' },
-  { title: '费用', key: 'cost' },
-  { title: '时间', key: 'createdAt' }
-]
+  { title: "ID", key: "id", width: 80 },
+  { title: "提供商", key: "provider" },
+  { title: "模型", key: "model" },
+  { title: "类型", key: "requestType" },
+  { title: "输入 Tokens", key: "inputTokens" },
+  { title: "输出 Tokens", key: "outputTokens" },
+  { title: "费用", key: "cost" },
+  { title: "时间", key: "createdAt" },
+];
 
 const formatNumber = (num) => {
-  if (!num) return '0'
-  return num.toLocaleString()
-}
+  if (!num) return "0";
+  return num.toLocaleString();
+};
 
 const formatDateTime = (dateStr) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleString('zh-CN')
-}
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return date.toLocaleString("zh-CN");
+};
 
 const loadStats = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const res = await chatAPI.getUsageStats()
-    stats.value = res || {}
+    const res = await chatAPI.getUsageStats();
+    stats.value = res || {};
   } catch (e) {
-    console.error('加载统计数据失败:', e)
+    console.error("加载统计数据失败:", e);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const loadLogs = async () => {
   try {
-    const res = await chatAPI.getUsageLogs({ limit: 50 })
-    logs.value = res.logs || []
+    const res = await chatAPI.getUsageLogs({ limit: 50 });
+    logs.value = res.logs || [];
   } catch (e) {
-    console.error('加载使用记录失败:', e)
+    console.error("加载使用记录失败:", e);
   }
-}
+};
 
 onMounted(() => {
-  loadStats()
-  loadLogs()
-})
+  loadStats();
+  loadLogs();
+});
 </script>
