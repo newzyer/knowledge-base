@@ -13,7 +13,7 @@ import router from "./router";
 
 const lightTheme: ThemeDefinition = {
   colors: {
-    primary: "#1976D",
+    primary: "#01976D",
     secondary: "#424242",
     accent: "#82B1FF",
     error: "#FF5252",
