@@ -1,6 +1,11 @@
+export interface FormInstance {
+  validate: () => Promise<{ valid: boolean }>;
+}
+
 export interface UserInfo {
   id: number;
   username: string;
+  nickname: string;
   email: string;
   createdAt: string;
   updatedAt: string;
@@ -98,16 +103,47 @@ export interface ModelInfo {
   description?: string;
 }
 
+export interface UsageProviderStat {
+  provider: string;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  cost?: number;
+}
+
+export interface UsageModelStat {
+  model: string;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  cost?: number;
+}
+
+export interface UsageDateStat {
+  date: string;
+  requests: number;
+  inputTokens: number;
+  outputTokens: number;
+  cost?: number;
+}
+
 export interface UsageStats {
-  totalTokens: number;
   totalRequests: number;
-  todayTokens: number;
-  todayRequests: number;
+  totalInput: number;
+  totalOutput: number;
+  totalCost: number;
+  byProvider: UsageProviderStat[];
+  byModel: UsageModelStat[];
+  byDate: UsageDateStat[];
 }
 
 export interface UsageLog {
   id: number;
-  tokens: number;
+  provider?: string;
   model: string;
+  requestType?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  cost?: number;
   createdAt: string;
 }

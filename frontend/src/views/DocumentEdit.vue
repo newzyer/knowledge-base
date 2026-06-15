@@ -165,7 +165,7 @@ const handleSubmit = async () => {
     const data = {
       title: form.title,
       categoryID: form.categoryID || undefined,
-      tags: form.tags,
+      tags: form.tags.map((name) => ({ name })),
       summary: form.summary,
       content: form.content,
     };

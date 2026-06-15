@@ -113,10 +113,10 @@
 import { ref, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { register } from "@/api";
-import { showSnackbar } from "@/api/request";
+import type { FormInstance } from "@/api/types";
 
 const router = useRouter();
-const formRef = ref(null);
+const formRef = ref<FormInstance | null>(null);
 const loading = ref(false);
 const showPassword = ref(false);
 const showConfirm = ref(false);
@@ -129,13 +129,14 @@ const form = reactive({
 });
 
 const snackbar = reactive({ show: false, text: "", color: "success" });
-const notify = (text, color = "success") => {
+const notify = (text: string, color = "success") => {
   snackbar.text = text;
   snackbar.color = color;
   snackbar.show = true;
 };
 
 const handleRegister = async () => {
+  if (!formRef.value) return;
   const { valid } = await formRef.value.validate();
   if (!valid) return;
 

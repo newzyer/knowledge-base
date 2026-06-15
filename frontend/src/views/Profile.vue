@@ -135,10 +135,11 @@ import { ref, reactive, onMounted } from "vue";
 import { useUserStore } from "@/stores/user";
 import { updateProfile, changePassword } from "@/api";
 import { showSnackbar } from "@/api/request";
+import type { FormInstance } from "@/api/types";
 
 const userStore = useUserStore();
-const formRef = ref(null);
-const passwordFormRef = ref(null);
+const formRef = ref<FormInstance | null>(null);
+const passwordFormRef = ref<FormInstance | null>(null);
 const loading = ref(false);
 const passwordLoading = ref(false);
 
@@ -168,6 +169,7 @@ const loadProfile = () => {
 };
 
 const handleUpdate = async () => {
+  if (!formRef.value) return;
   const { valid } = await formRef.value.validate();
   if (!valid) return;
 
@@ -187,6 +189,7 @@ const handleUpdate = async () => {
 };
 
 const handleChangePassword = async () => {
+  if (!passwordFormRef.value) return;
   const { valid } = await passwordFormRef.value.validate();
   if (!valid) return;
 

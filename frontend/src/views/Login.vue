@@ -102,18 +102,20 @@ import { useRouter } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import { useSnackbarStore } from "@/stores/snackbar";
 import { showSnackbar } from "@/api/request";
+import type { FormInstance } from "@/api/types";
 
 const router = useRouter();
 const userStore = useUserStore();
 const snackbarStore = useSnackbarStore();
 
-const formRef = ref(null);
+const formRef = ref<FormInstance | null>(null);
 const loading = ref(false);
 const showPassword = ref(false);
 
 const form = reactive({ username: "", password: "", rememberMe: false });
 
 const handleLogin = async () => {
+  if (!formRef.value) return;
   const valid = await formRef.value.validate();
   if (!valid) return;
 

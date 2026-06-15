@@ -63,9 +63,7 @@
                 <v-list-item-title>{{ item.provider }}</v-list-item-title>
                 <v-list-item-subtitle>
                   {{ item.requests }} 次 ·
-                  {{
-                    formatNumber(item.inputTokens + item.outputTokens)
-                  }}
+                  {{ formatNumber(item.inputTokens + item.outputTokens) }}
                   tokens
                 </v-list-item-subtitle>
                 <template v-slot:append>
@@ -90,9 +88,7 @@
                 <v-list-item-title>{{ item.model }}</v-list-item-title>
                 <v-list-item-subtitle>
                   {{ item.requests }} 次 ·
-                  {{
-                    formatNumber(item.inputTokens + item.outputTokens)
-                  }}
+                  {{ formatNumber(item.inputTokens + item.outputTokens) }}
                   tokens
                 </v-list-item-subtitle>
                 <template v-slot:append>
@@ -169,9 +165,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { chatAPI } from "@/api/chat";
+import type { UsageLog, UsageStats } from "@/api/types";
 
 const loading = ref(false);
-const stats = ref({
+const stats = ref<UsageStats>({
   totalRequests: 0,
   totalInput: 0,
   totalOutput: 0,
@@ -180,7 +177,8 @@ const stats = ref({
   byModel: [],
   byDate: [],
 });
-const logs = ref([]);
+
+const logs = ref<UsageLog[]>([]);
 
 const logHeaders = [
   { title: "ID", key: "id", width: 80 },
@@ -193,12 +191,12 @@ const logHeaders = [
   { title: "时间", key: "createdAt" },
 ];
 
-const formatNumber = (num) => {
+const formatNumber = (num?: number | null) => {
   if (!num) return "0";
   return num.toLocaleString();
 };
 
-const formatDateTime = (dateStr) => {
+const formatDateTime = (dateStr: string) => {
   if (!dateStr) return "";
   const date = new Date(dateStr);
   return date.toLocaleString("zh-CN");
@@ -207,8 +205,16 @@ const formatDateTime = (dateStr) => {
 const loadStats = async () => {
   loading.value = true;
   try {
-    const res = await chatAPI.getUsageStats();
-    stats.value = res || {};
+    const res = await chatAPI.getUsageStats({});
+    stats.value = res.data || {
+      totalRequests: 0,
+      totalInput: 0,
+      totalOutput: 0,
+      totalCost: 0,
+      byProvider: [],
+      byModel: [],
+      byDate: [],
+    };
   } catch (e) {
     console.error("加载统计数据失败:", e);
   } finally {
@@ -218,8 +224,8 @@ const loadStats = async () => {
 
 const loadLogs = async () => {
   try {
-    const res = await chatAPI.getUsageLogs({ limit: 50 });
-    logs.value = res.logs || [];
+    const res = await chatAPI.getUsageLogs({ page: 1, size: 50 });
+    logs.value = res.data || [];
   } catch (e) {
     console.error("加载使用记录失败:", e);
   }

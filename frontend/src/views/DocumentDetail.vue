@@ -94,6 +94,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { useRoute } from "vue-router";
+import type { Document } from "@/api/types";
 import { getDocument, exportMarkdown } from "@/api";
 import { showSnackbar } from "@/api/request";
 import { documentAPI } from "@/api/chat";
@@ -101,7 +102,15 @@ import { documentAPI } from "@/api/chat";
 const route = useRoute();
 const loading = ref(false);
 const indexing = ref(false);
-const currentDoc = ref({});
+const currentDoc = ref<Document>({
+  id: 0,
+  title: "",
+  content: "",
+  createdAt: "",
+  updatedAt: "",
+  category: null,
+  tags: [],
+});
 
 const renderedContent = computed(() => {
   const content = currentDoc.value.content || "";
@@ -120,7 +129,7 @@ const renderedContent = computed(() => {
     .replace(/\n/g, "<br>");
 });
 
-const formatDate = (dateStr) => {
+const formatDate = (dateStr: string) => {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleString("zh-CN");
 };
@@ -128,7 +137,7 @@ const formatDate = (dateStr) => {
 const loadDocument = async () => {
   loading.value = true;
   try {
-    const res = await getDocument(route.params.id);
+    const res = await getDocument(route.params.id as string);
     currentDoc.value = res.data;
   } finally {
     loading.value = false;
@@ -137,7 +146,7 @@ const loadDocument = async () => {
 
 const handleExportMarkdown = async () => {
   try {
-    const res = await exportMarkdown(route.params.id);
+    const res = await exportMarkdown(route.params.id as string);
     const blob = new Blob([res], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -154,7 +163,7 @@ const handleExportMarkdown = async () => {
 const handleExportPDF = async () => {
   try {
     const html2pdf = (await import("html2pdf.js")).default;
-    const content = document.querySelector(".doc-content");
+    const content = document.querySelector<HTMLElement>(".doc-content");
     if (!content) return;
 
     html2pdf()
@@ -177,9 +186,9 @@ const handleExportPDF = async () => {
 const handleCreateIndex = async () => {
   indexing.value = true;
   try {
-    await documentAPI.createIndex(route.params.id);
+    await documentAPI.createIndex(route.params.id as string);
     showSnackbar("索引创建成功，现在可以在 AI 对话中使用此文档");
-  } catch (error) {
+  } catch (error: any) {
     showSnackbar(
       "索引创建失败：" + (error.response?.data?.error || "未知错误"),
       "error",
